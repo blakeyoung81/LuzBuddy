@@ -52,5 +52,15 @@
     "deviceName": "Harvard Diploma",
     "ip": "::1",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763737116127",
+    "timestamp": 1763737116127,
+    "name": "Test User",
+    "message": "Testing POST",
+    "action": "test action",
+    "deviceName": "Test Device",
+    "ip": "::1",
+    "userAgent": "curl/8.7.1"
   }
 ]
