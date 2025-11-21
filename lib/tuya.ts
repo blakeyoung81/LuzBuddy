@@ -50,36 +50,42 @@ async function getAccessToken() {
 }
 
 async function makeRequest(method: string, path: string, body: any = null) {
-    const token = await getAccessToken();
-    const now = Date.now().toString();
+    try {
+        const token = await getAccessToken();
+        const now = Date.now().toString();
 
-    const contentHash = crypto.createHash('sha256').update(body ? JSON.stringify(body) : '').digest('hex');
-    const stringToSign = [
-        method,
-        contentHash,
-        '',
-        path,
-    ].join('\n');
+        const contentHash = crypto.createHash('sha256').update(body ? JSON.stringify(body) : '').digest('hex');
+        const stringToSign = [
+            method,
+            contentHash,
+            '',
+            path,
+        ].join('\n');
 
-    const signStr = CLIENT_ID + token + now + stringToSign;
-    const signature = sign(signStr, CLIENT_SECRET);
+        const signStr = CLIENT_ID + token + now + stringToSign;
+        const signature = sign(signStr, CLIENT_SECRET);
 
-    const headers: any = {
-        'client_id': CLIENT_ID,
-        'access_token': token,
-        'sign': signature,
-        't': now,
-        'sign_method': 'HMAC-SHA256',
-        'Content-Type': 'application/json',
-    };
+        const headers: any = {
+            'client_id': CLIENT_ID,
+            'access_token': token,
+            'sign': signature,
+            't': now,
+            'sign_method': 'HMAC-SHA256',
+            'Content-Type': 'application/json',
+        };
 
-    const res = await fetch(`${BASE_URL}${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-    });
+        const res = await fetch(`${BASE_URL}${path}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+        });
 
-    return await res.json();
+        const data = await res.json();
+        return data;
+    } catch (e) {
+        console.error('[Tuya] Request Error:', e);
+        return { success: false, msg: 'Request failed' };
+    }
 }
 
 export async function getTuyaDevices() {
@@ -97,10 +103,22 @@ export async function getTuyaDevices() {
     const res = await makeRequest('GET', '/v1.0/iot-03/devices');
 
     if (res.success) {
+        console.log(`[Tuya] Found ${res.result.devices?.length || 0} devices`);
         return res.result.devices || [];
     }
-    console.error('Tuya fetch failed:', res);
+    console.error('[Tuya] Fetch failed:', res);
     return [];
+}
+
+export async function getTuyaDevice(deviceId: string) {
+    console.log(`[Tuya] Fetching device ${deviceId}...`);
+    const res = await makeRequest('GET', `/v1.0/iot-03/devices/${deviceId}`);
+    if (res.success) {
+        console.log(`[Tuya] Found device ${deviceId}`);
+        return res.result;
+    }
+    console.error(`[Tuya] Failed to fetch device ${deviceId}:`, res);
+    return null;
 }
 
 export async function controlTuyaDevice(deviceId: string, commands: any[]) {

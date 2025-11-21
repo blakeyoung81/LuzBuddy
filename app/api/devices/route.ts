@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { UnifiedDevice, GoveeDevice } from '@/types';
-import { getTuyaDevices } from '@/lib/tuya';
+import { getTuyaDevices, getTuyaDevice } from '@/lib/tuya';
 
 const GOVEE_API_KEY = process.env.GOVEE_API_KEY;
 const GOVEE_API_URL = 'https://developer-api.govee.com/v1/devices';
@@ -49,6 +49,16 @@ export async function GET() {
         if (process.env.TUYA_CLIENT_ID) {
             try {
                 const rawTuya = await getTuyaDevices();
+
+                // DEBUG: Try fetching specific device if list is empty
+                if (rawTuya.length === 0) {
+                    const specificId = 'eb8f2f49f55123b3b4bqua';
+                    const specificDevice = await getTuyaDevice(specificId);
+                    if (specificDevice) {
+                        rawTuya.push(specificDevice);
+                    }
+                }
+
                 tuyaDevices = rawTuya.map((d: any) => {
                     // Extract status
                     const switchStatus = d.status?.find((s: any) => s.code === 'switch_led' || s.code === 'switch_1')?.value;
