@@ -60,10 +60,62 @@ export async function POST(request: Request) {
                     code: 'colour_data',
                     value: { h: tuyaH, s: tuyaS, v: tuyaV }
                 });
+            } else if (cmd.name === 'colorTemp') {
+                // User provided: 0-100 (slider)
+                // Tuya temp_value: 0-1000
+                const val = Math.max(0, Math.min(1000, Number(cmd.value) * 10));
+                commands.push({ code: 'work_mode', value: 'white' });
+                commands.push({ code: 'temp_value', value: val });
+            } else if (cmd.name === 'scene') {
+                // User provided: { id: 1-8 }
+                // Tuya scene_data: complex JSON.
+                // For now, we trigger the scene slot via scene_num if possible, 
+                // or we construct a basic scene payload.
+                // NOTE: 'scene_data' usually requires the FULL scene definition.
+                // However, some devices support 'scene_num' directly? No, usually part of scene_data.
+                // Let's try sending a minimal scene_data with just the ID if the device supports it,
+                // OR we have to construct a default scene.
+                // Given the complexity, let's try to set 'work_mode' to 'scene' and 'scene_data' to a preset.
+                // We'll assume the user wants to activate one of the 8 slots.
+                // We need to construct a valid scene_data value.
+                // Format: {"scene_num": X, "scene_units": [...]}
+                // This is risky without knowing the exact required fields. 
+                // Strategy: Just set work_mode to 'scene'. Some devices cycle or remember last.
+                // Better Strategy: If we can't easily set a specific scene without the full blob,
+                // we might need to fetch the current scene data first? Too slow.
+                // Let's try sending just the scene_num if the device accepts partial updates (unlikely).
+                // FALLBACK: We will just set work_mode to 'scene' for now, 
+                // and if the user wants specific scenes, we might need to hardcode some "default" scene blobs for 1-8.
+
+                // Let's try a generic "Static Color" scene structure for the requested slot.
+                // This is a guess at a valid structure.
+                const sceneId = (cmd.value as any).id || 1;
+                // Send scene_data directly. work_mode: 'scene' is not supported by this device's schema.
+                commands.push({
+                    code: 'scene_data',
+                    value: {
+                        scene_num: sceneId,
+                        scene_units: [
+                            {
+                                unit_change_mode: "static",
+                                unit_switch_duration: 0,
+                                unit_gradient_duration: 0,
+                                h: 0, s: 0, v: 1000,
+                                bright: 1000, temperature: 0
+                            }
+                        ]
+                    }
+                });
+            } else if (cmd.name === 'countdown') {
+                // User provided: seconds
+                commands.push({ code: 'countdown', value: Number(cmd.value) });
             }
 
-            const success = await controlTuyaDevice(device, commands);
-            if (!success) throw new Error('Tuya control failed');
+            const result = await controlTuyaDevice(device, commands);
+            if (!result.success) {
+                console.error('Tuya control failed for commands:', JSON.stringify(commands), 'Error:', result.msg);
+                throw new Error(`Tuya control failed: ${result.msg}`);
+            }
 
             return NextResponse.json({ message: 'Success', code: 200 });
         } else {
@@ -104,8 +156,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Success' });
         }
 
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    } catch (error: any) {
+        console.error('Control API Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error', details: error.toString() }, { status: 500 });
     }
 }

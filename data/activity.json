@@ -92,5 +92,45 @@
     "deviceName": "Prism",
     "ip": "::1",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763737539075",
+    "timestamp": 1763737539075,
+    "name": "Anonymous",
+    "message": "5 4 3 2 1 ",
+    "action": "set timer for 5s",
+    "deviceName": "Prism",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763737552850",
+    "timestamp": 1763737552850,
+    "name": "Anonymous",
+    "message": "",
+    "action": "changed color temp",
+    "deviceName": "Prism",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763737560271",
+    "timestamp": 1763737560271,
+    "name": "Anonymous",
+    "message": "",
+    "action": "set brightness to 63%",
+    "deviceName": "Prism",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763737561913",
+    "timestamp": 1763737561913,
+    "name": "Anonymous",
+    "message": "",
+    "action": "set brightness to 100%",
+    "deviceName": "Prism",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
   }
 ]

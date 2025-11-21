@@ -126,5 +126,5 @@ export async function controlTuyaDevice(deviceId: string, commands: any[]) {
     const res = await makeRequest('POST', `/v1.0/iot-03/devices/${deviceId}/commands`, {
         commands
     });
-    return res.success;
+    return { success: res.success, msg: res.msg || (res.success ? 'Success' : 'Unknown error') };
 }

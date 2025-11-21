@@ -6,6 +6,8 @@ export interface UnifiedDevice {
     isOn: boolean;
     brightness: number;
     color: { r: number; g: number; b: number };
+    colorTemp?: number; // 0-1000
+    countdown?: number; // seconds
     capabilities: {
         modes: boolean;
         scenes: boolean;

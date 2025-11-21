@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { UnifiedDevice } from '../types';
-import { Power, Sun, Palette, Loader2 } from 'lucide-react';
+import { Power, Sun, Palette, Loader2, Timer, Settings } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -14,7 +14,11 @@ export default function DeviceCard({ device }: DeviceCardProps) {
     const [isOn, setIsOn] = useState(device.isOn);
     const [brightness, setBrightness] = useState(device.brightness);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'control' | 'scenes' | 'music'>('control');
+    const [activeTab, setActiveTab] = useState<'control' | 'scenes' | 'music' | 'settings'>('control');
+
+    // Advanced State
+    const [colorTemp, setColorTemp] = useState(0);
+    const [countdown, setCountdown] = useState(0);
 
     // Scene State
     const [scenes, setScenes] = useState<{ sceneId: number, sceneName: string }[]>([]);
@@ -79,7 +83,9 @@ export default function DeviceCard({ device }: DeviceCardProps) {
             if (cmd.name === 'turn') actionDesc = `turned ${cmd.value}`;
             else if (cmd.name === 'brightness') actionDesc = `set brightness to ${cmd.value}%`;
             else if (cmd.name === 'color') actionDesc = `changed color`;
+            else if (cmd.name === 'colorTemp') actionDesc = `changed color temp`;
             else if (cmd.name === 'scene') actionDesc = `activated scene`;
+            else if (cmd.name === 'countdown') actionDesc = `set timer for ${cmd.value}s`;
 
             setPendingAction(actionDesc);
             setShowNotePopup(true);
@@ -118,6 +124,18 @@ export default function DeviceCard({ device }: DeviceCardProps) {
 
     const changeColor = (color: { r: number; g: number; b: number }) => {
         controlDevice({ name: 'color', value: color });
+    };
+
+    const handleColorTempChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setColorTemp(parseInt(e.target.value));
+    };
+
+    const sendColorTemp = () => {
+        controlDevice({ name: 'colorTemp', value: colorTemp });
+    };
+
+    const sendCountdown = () => {
+        controlDevice({ name: 'countdown', value: countdown });
     };
 
     const fetchScenes = async () => {
@@ -164,6 +182,10 @@ export default function DeviceCard({ device }: DeviceCardProps) {
         // If we use the 'control' endpoint, we might need to send { name: 'mode', value: sceneId } or similar.
         // Let's try sending the scene ID as a 'scene' command.
         controlDevice({ name: 'scene', value: { id: sceneId } });
+    };
+
+    const activateTuyaScene = (slot: number) => {
+        controlDevice({ name: 'scene', value: { id: slot } });
     };
 
     return (
@@ -215,6 +237,12 @@ export default function DeviceCard({ device }: DeviceCardProps) {
                     >
                         Music
                     </button>
+                    <button
+                        onClick={() => setActiveTab('settings')}
+                        className={twMerge("text-xs font-medium px-3 py-1 rounded-full transition-colors", activeTab === 'settings' ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300")}
+                    >
+                        Settings
+                    </button>
                 </div>
 
                 <div className="mt-2 min-h-[150px]">
@@ -240,6 +268,29 @@ export default function DeviceCard({ device }: DeviceCardProps) {
                                     className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400"
                                 />
                             </div>
+
+                            {/* Color Temp Control (Tuya Only for now) */}
+                            {device.vendor === 'tuya' && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-zinc-400">
+                                        <div className="flex items-center gap-1">
+                                            <Sun className="w-3 h-3 text-orange-300" />
+                                            <span>Color Temp</span>
+                                        </div>
+                                        <span>{colorTemp}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={colorTemp}
+                                        onChange={handleColorTempChange}
+                                        onMouseUp={sendColorTemp}
+                                        onTouchEnd={sendColorTemp}
+                                        className="w-full h-1.5 bg-gradient-to-r from-orange-400 to-blue-200 rounded-full appearance-none cursor-pointer"
+                                    />
+                                </div>
+                            )}
 
                             {/* Color Presets */}
                             <div className="space-y-2">
@@ -268,7 +319,23 @@ export default function DeviceCard({ device }: DeviceCardProps) {
                         </div>
                     )}
 
-                    {activeTab === 'scenes' && (
+
+
+                    {activeTab === 'scenes' && device.vendor === 'tuya' && (
+                        <div className="grid grid-cols-4 gap-2">
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map((slot) => (
+                                <button
+                                    key={slot}
+                                    onClick={() => activateTuyaScene(slot)}
+                                    className="aspect-square flex items-center justify-center bg-zinc-800/50 rounded-xl hover:bg-zinc-700 hover:text-white text-zinc-400 text-xs font-bold transition-all border border-zinc-800 hover:border-zinc-600"
+                                >
+                                    S{slot}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {activeTab === 'scenes' && device.vendor === 'govee' && (
                         <div className="relative">
                             {scenesLoading ? (
                                 <div className="flex justify-center py-8">
@@ -309,6 +376,35 @@ export default function DeviceCard({ device }: DeviceCardProps) {
                             >
                                 Enable Music Mode
                             </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                    <Timer className="w-4 h-4" />
+                                    <span>Countdown Timer (Seconds)</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        value={countdown}
+                                        onChange={(e) => setCountdown(parseInt(e.target.value) || 0)}
+                                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                                        placeholder="Seconds"
+                                    />
+                                    <button
+                                        onClick={sendCountdown}
+                                        className="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-500 transition-colors"
+                                    >
+                                        Set
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-zinc-600">
+                                    Set to 0 to cancel. Light will turn off after time expires.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
