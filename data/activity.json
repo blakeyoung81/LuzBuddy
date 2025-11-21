@@ -1,0 +1,56 @@
+[
+  {
+    "id": "1763733806960",
+    "timestamp": 1763733806960,
+    "name": "Blake",
+    "message": "Love the color",
+    "action": "changed color",
+    "deviceName": "Curtain"
+  },
+  {
+    "id": "1763733826041",
+    "timestamp": 1763733826041,
+    "name": "Anonymous",
+    "message": "PINK FOREVER",
+    "action": "changed color",
+    "deviceName": "Curtain"
+  },
+  {
+    "id": "1763734195080",
+    "timestamp": 1763734195080,
+    "name": "Anonymous",
+    "message": "Green is the best",
+    "action": "changed color",
+    "deviceName": "Curtain"
+  },
+  {
+    "id": "1763734373433",
+    "timestamp": 1763734373433,
+    "name": "Anonymous",
+    "message": "",
+    "action": "set brightness to 62%",
+    "deviceName": "Harvard Diploma",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763734378337",
+    "timestamp": 1763734378337,
+    "name": "Anonymous",
+    "message": "",
+    "action": "set brightness to 100%",
+    "deviceName": "Harvard Diploma",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1763734424541",
+    "timestamp": 1763734424541,
+    "name": "Anonymous",
+    "message": "",
+    "action": "changed color",
+    "deviceName": "Harvard Diploma",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  }
+]
