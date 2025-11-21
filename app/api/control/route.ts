@@ -90,21 +90,92 @@ export async function POST(request: Request) {
                 // Let's try a generic "Static Color" scene structure for the requested slot.
                 // This is a guess at a valid structure.
                 const sceneId = (cmd.value as any).id || 1;
-                // Send scene_data directly. work_mode: 'scene' is not supported by this device's schema.
+
+                // Define Creative Scenes
+                let scenePayload: any = {};
+
+                switch (sceneId) {
+                    case 1: // Sunrise (Warm fade: Orange -> Yellow)
+                        scenePayload = {
+                            scene_num: 1,
+                            scene_units: [
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 30, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 60, s: 1000, v: 1000, bright: 1000, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 2: // Ocean (Cool gradient: Blue -> Cyan)
+                        scenePayload = {
+                            scene_num: 2,
+                            scene_units: [
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 240, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 180, s: 1000, v: 1000, bright: 1000, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 3: // Sunset (Deep warm gradient: Red -> Purple)
+                        scenePayload = {
+                            scene_num: 3,
+                            scene_units: [
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 0, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 300, s: 1000, v: 1000, bright: 1000, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 4: // Forest (Nature greens: Green -> Lime)
+                        scenePayload = {
+                            scene_num: 4,
+                            scene_units: [
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 120, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "gradient", unit_switch_duration: 100, unit_gradient_duration: 100, h: 90, s: 1000, v: 1000, bright: 1000, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 5: // Cyberpunk (High contrast: Pink -> Cyan)
+                        scenePayload = {
+                            scene_num: 5,
+                            scene_units: [
+                                { unit_change_mode: "jump", unit_switch_duration: 50, unit_gradient_duration: 50, h: 300, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "jump", unit_switch_duration: 50, unit_gradient_duration: 50, h: 180, s: 1000, v: 1000, bright: 1000, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 6: // Romance (Soft Red/Pink static)
+                        scenePayload = {
+                            scene_num: 6,
+                            scene_units: [
+                                { unit_change_mode: "static", unit_switch_duration: 0, unit_gradient_duration: 0, h: 330, s: 800, v: 800, bright: 800, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 7: // Party (Fast jumping multi-color)
+                        scenePayload = {
+                            scene_num: 7,
+                            scene_units: [
+                                { unit_change_mode: "jump", unit_switch_duration: 20, unit_gradient_duration: 20, h: 0, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "jump", unit_switch_duration: 20, unit_gradient_duration: 20, h: 120, s: 1000, v: 1000, bright: 1000, temperature: 0 },
+                                { unit_change_mode: "jump", unit_switch_duration: 20, unit_gradient_duration: 20, h: 240, s: 1000, v: 1000, bright: 1000, temperature: 0 }
+                            ]
+                        };
+                        break;
+                    case 8: // Focus (Cool White static)
+                        scenePayload = {
+                            scene_num: 8,
+                            scene_units: [
+                                { unit_change_mode: "static", unit_switch_duration: 0, unit_gradient_duration: 0, h: 0, s: 0, v: 0, bright: 1000, temperature: 0 } // Assuming temp 0 is cool or warm, actually usually 0-1000. Let's try 0 for now.
+                            ]
+                        };
+                        break;
+                    default:
+                        scenePayload = {
+                            scene_num: sceneId,
+                            scene_units: [{ unit_change_mode: "static", unit_switch_duration: 0, unit_gradient_duration: 0, h: 0, s: 0, v: 1000, bright: 1000, temperature: 0 }]
+                        };
+                }
+
                 commands.push({
                     code: 'scene_data',
-                    value: {
-                        scene_num: sceneId,
-                        scene_units: [
-                            {
-                                unit_change_mode: "static",
-                                unit_switch_duration: 0,
-                                unit_gradient_duration: 0,
-                                h: 0, s: 0, v: 1000,
-                                bright: 1000, temperature: 0
-                            }
-                        ]
-                    }
+                    value: scenePayload
                 });
             } else if (cmd.name === 'countdown') {
                 // User provided: seconds

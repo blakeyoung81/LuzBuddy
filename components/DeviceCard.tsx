@@ -24,6 +24,11 @@ export default function DeviceCard({ device }: DeviceCardProps) {
     const [scenes, setScenes] = useState<{ sceneId: number, sceneName: string }[]>([]);
     const [scenesLoading, setScenesLoading] = useState(false);
 
+    // Music Mode State
+    const [isListening, setIsListening] = useState(false);
+    const [volume, setVolume] = useState(0);
+    const [lastBeatTime, setLastBeatTime] = useState(0);
+
     // Social / Note State
     const [showNotePopup, setShowNotePopup] = useState(false);
     const [pendingAction, setPendingAction] = useState('');
@@ -166,10 +171,65 @@ export default function DeviceCard({ device }: DeviceCardProps) {
     };
 
     useEffect(() => {
-        if (activeTab === 'scenes') {
-            fetchScenes();
+        let audioContext: AudioContext | null = null;
+        let analyser: AnalyserNode | null = null;
+        let microphone: MediaStreamAudioSourceNode | null = null;
+        let animationFrame: number;
+
+        if (isListening && activeTab === 'music') {
+            const startAudio = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    analyser.fftSize = 256;
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+
+                    const detectBeat = () => {
+                        analyser!.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for (let i = 0; i < bufferLength; i++) {
+                            sum += dataArray[i];
+                        }
+                        const average = sum / bufferLength;
+                        setVolume(average);
+
+                        // Simple beat detection: if volume > threshold and enough time passed
+                        const now = Date.now();
+                        if (average > 30 && now - lastBeatTime > 800) { // Throttle to 800ms
+                            // Trigger a random color change
+                            const randomColor = {
+                                r: Math.floor(Math.random() * 255),
+                                g: Math.floor(Math.random() * 255),
+                                b: Math.floor(Math.random() * 255)
+                            };
+                            controlDevice({ name: 'color', value: randomColor });
+                            setLastBeatTime(now);
+                        }
+
+                        animationFrame = requestAnimationFrame(detectBeat);
+                    };
+
+                    detectBeat();
+                } catch (err) {
+                    console.error("Error accessing microphone:", err);
+                    setIsListening(false);
+                    alert("Could not access microphone. Please allow permissions.");
+                }
+            };
+
+            startAudio();
         }
-    }, [activeTab, device.id, device.model]); // Added device dependencies for completeness
+
+        return () => {
+            if (audioContext) audioContext.close();
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            if (microphone) microphone.disconnect();
+        };
+    }, [isListening, activeTab, lastBeatTime]); // Dependencies for effect
 
     const activateScene = (sceneId: number) => {
         // For dynamic scenes, the command usually involves sending the sceneId
@@ -322,14 +382,23 @@ export default function DeviceCard({ device }: DeviceCardProps) {
 
 
                     {activeTab === 'scenes' && device.vendor === 'tuya' && (
-                        <div className="grid grid-cols-4 gap-2">
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map((slot) => (
+                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                            {[
+                                { id: 1, name: 'Sunrise 🌅' },
+                                { id: 2, name: 'Ocean 🌊' },
+                                { id: 3, name: 'Sunset 🌇' },
+                                { id: 4, name: 'Forest 🌲' },
+                                { id: 5, name: 'Cyberpunk 🔮' },
+                                { id: 6, name: 'Romance ❤️' },
+                                { id: 7, name: 'Party 🎉' },
+                                { id: 8, name: 'Focus 🧘' }
+                            ].map((scene) => (
                                 <button
-                                    key={slot}
-                                    onClick={() => activateTuyaScene(slot)}
-                                    className="aspect-square flex items-center justify-center bg-zinc-800/50 rounded-xl hover:bg-zinc-700 hover:text-white text-zinc-400 text-xs font-bold transition-all border border-zinc-800 hover:border-zinc-600"
+                                    key={scene.id}
+                                    onClick={() => activateTuyaScene(scene.id)}
+                                    className="px-3 py-2 text-xs text-zinc-300 bg-zinc-800/50 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-left truncate border border-zinc-800/50"
                                 >
-                                    S{slot}
+                                    {scene.name}
                                 </button>
                             ))}
                         </div>
@@ -363,18 +432,40 @@ export default function DeviceCard({ device }: DeviceCardProps) {
                     )}
 
                     {activeTab === 'music' && (
-                        <div className="flex flex-col items-center justify-center h-full text-center space-y-3 py-4">
-                            <div className="p-3 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-music"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-4">
+                            <div className={twMerge("p-4 rounded-full transition-all duration-300", isListening ? "bg-indigo-500/20 text-indigo-400 animate-pulse" : "bg-zinc-800 text-zinc-500")}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mic"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
                             </div>
-                            <p className="text-xs text-zinc-400">
-                                Music mode uses your device's microphone to sync lights with sound.
-                            </p>
+
+                            {isListening && (
+                                <div className="flex gap-1 h-8 items-end justify-center">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <div
+                                            key={i}
+                                            className="w-1 bg-indigo-500 rounded-full transition-all duration-75"
+                                            style={{ height: `${Math.min(100, Math.max(10, volume * (i % 2 === 0 ? 1.5 : 0.8)))}%` }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-medium text-zinc-200">Universal Music Sync</h4>
+                                <p className="text-[10px] text-zinc-500 max-w-[200px] mx-auto">
+                                    Uses your microphone to sync lights with music. Works for all devices!
+                                </p>
+                            </div>
+
                             <button
-                                className="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-full hover:bg-indigo-500 transition-colors"
-                                onClick={() => alert('Music mode activation requires specific command codes per device model.')}
+                                className={twMerge(
+                                    "px-6 py-2 text-xs font-medium rounded-full transition-all shadow-lg",
+                                    isListening
+                                        ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/50"
+                                        : "bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-500/25"
+                                )}
+                                onClick={() => setIsListening(!isListening)}
                             >
-                                Enable Music Mode
+                                {isListening ? 'Stop Listening' : 'Start Listening'}
                             </button>
                         </div>
                     )}
