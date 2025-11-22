@@ -46,9 +46,10 @@ export async function GET() {
 
         // 2. Fetch Tuya Devices
         let tuyaDevices: UnifiedDevice[] = [];
+        let rawTuya: any[] = [];
         if (process.env.TUYA_CLIENT_ID) {
             try {
-                const rawTuya = await getTuyaDevices();
+                rawTuya = await getTuyaDevices();
 
                 // DEBUG: Try fetching specific device if list is empty
                 if (rawTuya.length === 0) {
@@ -88,9 +89,30 @@ export async function GET() {
         // 3. Combine
         const allDevices = [...goveeDevices, ...tuyaDevices];
 
-        return NextResponse.json({ data: { devices: allDevices } });
-    } catch (error) {
+        return NextResponse.json({
+            data: { devices: allDevices },
+            debug: {
+                govee: {
+                    keyPresent: !!GOVEE_API_KEY,
+                    count: goveeDevices.length,
+                    error: null // We could capture the specific error above if we refactored slightly
+                },
+                tuya: {
+                    keyPresent: !!process.env.TUYA_CLIENT_ID,
+                    count: tuyaDevices.length,
+                    rawCount: rawTuya.length
+                }
+            }
+        });
+    } catch (error: any) {
         console.error(error);
-        return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Failed to fetch devices',
+            details: error.message,
+            debug: {
+                goveeKey: !!GOVEE_API_KEY,
+                tuyaKey: !!process.env.TUYA_CLIENT_ID
+            }
+        }, { status: 500 });
     }
 }

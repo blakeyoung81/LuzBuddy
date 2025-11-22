@@ -89,24 +89,27 @@ async function makeRequest(method: string, path: string, body: any = null) {
 }
 
 export async function getTuyaDevices() {
-    // Get devices from the project
-    // Note: This endpoint gets a list of devices under the user's account/project
-    // We might need to use a different endpoint depending on how the user is set up, 
-    // but /v1.0/devices is standard for user-linked devices. 
-    // However, for IoT Core projects, we often use /v1.0/devices with page params.
-    // Let's try fetching devices associated with the project.
-    // Actually, getting all devices for a project usually requires knowing the user_id or using the asset management API.
-    // For simplicity in this context, we'll assume we can fetch a list of devices if we have the right permissions.
-    // A common way is GET /v1.0/iot-03/devices (IoT Core)
+    // Try IoT Core endpoint first
+    console.log('[Tuya] Fetching devices from /v1.0/iot-03/devices...');
+    let res = await makeRequest('GET', '/v1.0/iot-03/devices');
 
-    // Let's try the standard IoT Core device list
-    const res = await makeRequest('GET', '/v1.0/iot-03/devices');
-
-    if (res.success) {
-        console.log(`[Tuya] Found ${res.result.devices?.length || 0} devices`);
-        return res.result.devices || [];
+    if (res.success && res.result?.devices) {
+        console.log(`[Tuya] Found ${res.result.devices.length} devices via IoT Core`);
+        return res.result.devices;
     }
-    console.error('[Tuya] Fetch failed:', res);
+
+    // Fallback to standard user-linked devices endpoint
+    console.log('[Tuya] IoT Core failed or empty, trying /v1.0/devices...');
+    res = await makeRequest('GET', '/v1.0/devices');
+
+    if (res.success && res.result) {
+        // The structure might differ here, usually result is the array or result.devices
+        const devices = Array.isArray(res.result) ? res.result : res.result.devices || [];
+        console.log(`[Tuya] Found ${devices.length} devices via Standard API`);
+        return devices;
+    }
+
+    console.error('[Tuya] All fetch attempts failed:', res);
     return [];
 }
 
